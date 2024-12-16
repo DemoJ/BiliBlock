@@ -7,14 +7,12 @@
     "storage"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://*/*"
+    "https://*.bilibili.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://*/*",
-        "http://*/*"
+        "https://*.bilibili.com/*"
       ],
       "js": [
         "content.js"
