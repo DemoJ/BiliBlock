@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>屏蔽关键词设置</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 250px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      color: #fff;
+      background-color: #007BFF;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .status {
+      text-align: center;
+      color: green;
+      font-size: 12px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+    }
+
+    .footer a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3>设置屏蔽关键词</h3>
+    <input type="text" id="keywords" placeholder="输入关键词（用 | 分隔）">
+    <button id="save">保存</button>
+    <p id="status" class="status">已保存！</p>
+    <div class="footer">
+      <p>使用 | 分隔多个关键词，例如：<br><strong>广告|挑战|推广</strong></p>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
