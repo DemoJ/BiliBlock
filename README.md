@@ -1,6 +1,7 @@
 # BiliBlock-通过关键词屏蔽B站视频
 
-一个 Chrome 浏览器插件，用于屏蔽B站视频，只要标题中包含关键词的视频都会被屏蔽，目前支持了首页和热门页视频。
+一个 Chrome 浏览器插件，用于屏蔽B站视频，只要标题中包含关键词的视频都会被屏蔽，目前支持了首页和热门页视频。  
+已上架到chrome应用商店，地址：[BiliBlock-通过关键词屏蔽B站视频](https://chromewebstore.google.com/detail/biliblock-%E9%80%9A%E8%BF%87%E5%85%B3%E9%94%AE%E8%AF%8D%E5%B1%8F%E8%94%BDb%E7%AB%99%E8%A7%86%E9%A2%91/fhpfjgpkileoggjbochgnjcafenljcdg?utm_source=ext_app_menu)
 
 ## 功能特性
 
