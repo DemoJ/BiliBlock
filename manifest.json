@@ -9,6 +9,10 @@
   "host_permissions": [
     "https://*.bilibili.com/*"
   ],
+  "web_accessible_resources": [{
+    "resources": ["tidmap.json"],
+    "matches": ["https://*.bilibili.com/*"]
+  }],
   "content_scripts": [
     {
       "matches": [

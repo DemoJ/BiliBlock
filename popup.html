@@ -9,80 +9,148 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      width: 250px;
+      width: 320px;
       background-color: #f9f9f9;
       color: #333;
     }
 
     .container {
-      padding: 15px;
+      padding: 20px;
     }
 
     h3 {
-      font-size: 18px;
-      margin-bottom: 10px;
+      font-size: 20px;
+      margin-bottom: 15px;
       text-align: center;
+      color: #2196F3;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: #444;
+      font-weight: 500;
     }
 
     input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       font-size: 14px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
       box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #2196F3;
+      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      padding-left: 2px;
     }
 
     button {
       width: 100%;
-      padding: 10px;
-      font-size: 14px;
+      padding: 12px;
+      font-size: 16px;
       color: #fff;
-      background-color: #007BFF;
+      background-color: #2196F3;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      text-align: center;
+      transition: background-color 0.3s;
     }
 
     button:hover {
-      background-color: #0056b3;
+      background-color: #1976D2;
     }
 
     .status {
       text-align: center;
-      color: green;
-      font-size: 12px;
-      margin-top: 10px;
+      color: #4CAF50;
+      font-size: 14px;
+      margin-top: 12px;
       display: none;
+      padding: 8px;
+      background-color: #E8F5E9;
+      border-radius: 4px;
     }
 
     .footer {
-      margin-top: 20px;
-      font-size: 12px;
-      color: #888;
-      text-align: center;
+      margin-top: 25px;
+      font-size: 13px;
+      color: #666;
     }
 
-    .footer a {
-      color: #007BFF;
-      text-decoration: none;
+    .footer .example {
+      background-color: #fff;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border: 1px solid #eee;
     }
 
-    .footer a:hover {
-      text-decoration: underline;
+    .footer .example strong {
+      color: #2196F3;
+    }
+
+    .footer .note {
+      background-color: #E3F2FD;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    .divider {
+      height: 1px;
+      background-color: #eee;
+      margin: 15px 0;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h3>设置屏蔽关键词</h3>
-    <input type="text" id="keywords" placeholder="输入关键词（用 | 分隔）">
-    <button id="save">保存</button>
-    <p id="status" class="status">已保存！</p>
+    <h3>BiliBlock 设置</h3>
+    
+    <div class="input-group">
+      <label for="titleKeywords">标题关键词</label>
+      <input type="text" id="titleKeywords" placeholder="输入标题关键词，用 | 分隔">
+      <div class="hint">屏蔽包含指定关键词的视频标题</div>
+    </div>
+    
+    <div class="input-group">
+      <label for="sectionKeywords">分区关键词</label>
+      <input type="text" id="sectionKeywords" placeholder="输入分区关键词，用 | 分隔">
+      <div class="hint">屏蔽指定分区的所有视频</div>
+    </div>
+    
+    <button id="save">保存设置</button>
+    <p id="status" class="status">设置已保存！</p>
+
     <div class="footer">
-      <p>使用 | 分隔多个关键词，例如：<br><strong>广告|挑战|推广</strong></p>
+      <div class="example">
+        <div>示例格式：</div>
+        <div>标题关键词：<strong>广告|挑战|推广</strong></div>
+        <div>分区关键词：<strong>游戏|音乐|舞蹈</strong></div>
+      </div>
+      
+      <div class="note">
+        📝 关于分区屏蔽：<br>
+        输入"游戏"将会屏蔽：单机游戏、手机游戏、网络游戏等所有包含"游戏"的分区视频<br>
+        输入"音乐"将会屏蔽：原创音乐、音乐现场、音乐综合等所有包含"音乐"的分区视频
+      </div>
     </div>
   </div>
   <script src="popup.js"></script>
