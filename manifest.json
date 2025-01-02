@@ -6,6 +6,12 @@
   "permissions": [
     "storage"
   ],
+  "browser_specific_settings": {
+  "gecko": {
+    "id": "diyun@diyun.site",
+    "strict_min_version": "58.0"
+  }
+},
   "host_permissions": [
     "https://*.bilibili.com/*"
   ],
