@@ -137,21 +137,34 @@ async function hideVideos(titleKeywords, sectionKeywords) {
   }
 }
 
+// 添加清理页面函数
+function cleanPage(enabled) {
+  if (!enabled) return;
+  
+  // 清理直播推荐区域
+  const liveElements = document.querySelectorAll('.pop-live-small-mode');
+  liveElements.forEach(element => {
+    element.style.display = 'none';
+  });
+}
+
 // 修改启动函数
 async function startBlocking() {
-  // 确保配置加载完成
   await loadTidMapConfig();
   
-  chrome.storage.local.get(["titleKeywords", "sectionKeywords"], (data) => {
+  chrome.storage.local.get(["titleKeywords", "sectionKeywords", "cleanMode"], (data) => {
     const titleKeywords = data.titleKeywords
       ? data.titleKeywords.split("|").map((k) => k.trim().toLowerCase())
       : [];
     const sectionKeywords = data.sectionKeywords
       ? data.sectionKeywords.split("|").map((k) => k.trim().toLowerCase())
       : [];
-
-    // 初始屏蔽
+    
+    // 执行视频屏蔽
     hideVideos(titleKeywords, sectionKeywords);
+    
+    // 执行页面清理
+    cleanPage(data.cleanMode);
 
     // 使用防抖处理动态内容
     let timeoutId;
@@ -159,6 +172,7 @@ async function startBlocking() {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         hideVideos(titleKeywords, sectionKeywords);
+        cleanPage(data.cleanMode);
       }, 500);
     });
 

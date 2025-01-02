@@ -33,4 +33,14 @@ chrome.storage.local.get(["titleKeywords", "sectionKeywords"], (data) => {
     document.getElementById("sectionKeywords").value = data.sectionKeywords;
   }
 });
+
+// 保存开关状态
+document.getElementById("cleanMode").addEventListener("change", (e) => {
+  chrome.storage.local.set({ cleanMode: e.target.checked });
+});
+
+// 初始化开关状态
+chrome.storage.local.get(["cleanMode"], (data) => {
+  document.getElementById("cleanMode").checked = !!data.cleanMode;
+});
   
