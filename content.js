@@ -141,48 +141,89 @@ async function hideVideos(titleKeywords, sectionKeywords) {
 function cleanPage(enabled) {
   if (!enabled) return;
   
-  // 清理直播推荐区域
-  const liveElements = document.querySelectorAll('.pop-live-small-mode');
-  liveElements.forEach(element => {
-    element.style.display = 'none';
-  });
+  const liveSelectors = [
+    '.pop-live-small-mode',
+    '.floor-single-card',
+  ];
+  
+  const cleanLiveElements = () => {
+    let removedCount = 0;
+    liveSelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => {
+        if (!element.dataset.biliblocked) {
+          element.style.setProperty('display', 'none', 'important');
+          element.dataset.biliblocked = 'true';
+          removedCount++;
+        }
+      });
+    });
+    return removedCount;
+  };
+
+  // 立即执行一次
+  cleanLiveElements();
+
+  // 延迟执行确保动态加载的内容也被处理
+  setTimeout(() => {
+    cleanLiveElements();
+  }, 1000);
+
+  // 使用轮询持续检查几秒钟
+  let checkCount = 0;
+  const interval = setInterval(() => {
+    const count = cleanLiveElements();
+    checkCount++;
+    
+    // 如果连续3次没有新元素被处理，或者已检查10次，则停止轮询
+    if ((count === 0 && checkCount > 3) || checkCount > 10) {
+      clearInterval(interval);
+    }
+  }, 500);
 }
 
 // 修改启动函数
-async function startBlocking() {
-  await loadTidMapConfig();
-  
-  chrome.storage.local.get(["titleKeywords", "sectionKeywords", "cleanMode"], (data) => {
-    const titleKeywords = data.titleKeywords
-      ? data.titleKeywords.split("|").map((k) => k.trim().toLowerCase())
-      : [];
-    const sectionKeywords = data.sectionKeywords
-      ? data.sectionKeywords.split("|").map((k) => k.trim().toLowerCase())
-      : [];
+function startBlocking() {
+  // 确保DOM已经加载
+  const init = async () => {
+    await loadTidMapConfig();
     
-    // 执行视频屏蔽
-    hideVideos(titleKeywords, sectionKeywords);
-    
-    // 执行页面清理
-    cleanPage(data.cleanMode);
+    chrome.storage.local.get(["titleKeywords", "sectionKeywords", "cleanMode"], (data) => {
+      const titleKeywords = data.titleKeywords
+        ? data.titleKeywords.split("|").map((k) => k.trim().toLowerCase())
+        : [];
+      const sectionKeywords = data.sectionKeywords
+        ? data.sectionKeywords.split("|").map((k) => k.trim().toLowerCase())
+        : [];
+      
+      // 执行清理和屏蔽
+      cleanPage(data.cleanMode);
+      hideVideos(titleKeywords, sectionKeywords);
 
-    // 使用防抖处理动态内容
-    let timeoutId;
-    const observer = new MutationObserver(() => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        hideVideos(titleKeywords, sectionKeywords);
-        cleanPage(data.cleanMode);
-      }, 500);
-    });
+      // 使用防抖处理动态内容
+      let timeoutId;
+      const observer = new MutationObserver(() => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          hideVideos(titleKeywords, sectionKeywords);
+          cleanPage(data.cleanMode);
+        }, 500);
+      });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
     });
-  });
+  };
+
+  // 确保在DOM加载完成后执行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 }
 
 // 执行屏蔽逻辑
 startBlocking();
-  
