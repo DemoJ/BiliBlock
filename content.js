@@ -189,11 +189,12 @@ function startBlocking() {
     await loadTidMapConfig();
     
     chrome.storage.local.get(["titleKeywords", "sectionKeywords", "cleanMode"], (data) => {
+      // 修改分隔逻辑,同时支持全角｜和半角|
       const titleKeywords = data.titleKeywords
-        ? data.titleKeywords.split("|").map((k) => k.trim().toLowerCase())
+        ? data.titleKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
         : [];
       const sectionKeywords = data.sectionKeywords
-        ? data.sectionKeywords.split("|").map((k) => k.trim().toLowerCase())
+        ? data.sectionKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
         : [];
       
       // 执行清理和屏蔽
