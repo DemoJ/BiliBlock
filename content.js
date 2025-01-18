@@ -55,33 +55,59 @@ async function getVideoTid(bvid) {
   return null;
 }
 
+// 修改时长转换函数
+function convertDurationToMinutes(duration) {
+  const parts = duration.split(':').map(Number);
+  let minutes = 0;
+  
+  if (parts.length === 2) {
+    // 格式为 "分:秒" (如 "08:59" 或 "03:59")
+    const [min, sec] = parts;
+    minutes = min + (sec / 60);
+    console.log(`视频时长 ${duration} 转换为 ${minutes.toFixed(2)} 分钟`);
+  } else if (parts.length === 3) {
+    // 格式为 "时:分:秒" (如 "1:08:59")
+    const [hour, min, sec] = parts;
+    minutes = (hour * 60) + min + (sec / 60);
+    console.log(`视频时长 ${duration} 转换为 ${minutes.toFixed(2)} 分钟`);
+  }
+  
+  return minutes;
+}
+
 // 修改隐藏视频的函数
-async function hideVideos(titleKeywords, sectionKeywords) {
+async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration) {
   const cardSelectors = [
     // 首页视频
     { 
       card: ".feed-card",
       title: ".bili-video-card__info--tit, .bili-video-card__info .bili-video-card__info--tit",
       bvid: "a[href*='/BV']",
-      parent: ".feed-card"
+      parent: ".feed-card",
+      up: ".up-name__text, .bili-video-card__info--author",
+      duration: ".bili-video-card__stats__duration, .bpx-player-homepage-time-label-total-time"
     },
     // 热门页视频
     {
       card: ".bili-video-card",
       title: ".bili-video-card__info--tit",
       bvid: "a[href*='/BV']",
-      parent: ".bili-video-card"
+      parent: ".bili-video-card",
+      up: ".up-name__text, .bili-video-card__info--author",
+      duration: ".bili-video-card__stats__duration"
     },
     // 其他页面视频
     {
       card: ".video-card",
       title: ".video-name",
       bvid: "a[href*='/BV']",
-      parent: ".video-card"
+      parent: ".video-card",
+      up: ".up-name__text, .bili-video-card__info--author",
+      duration: ".bili-video-card__stats__duration"
     }
   ];
 
-  for (const { card, title, bvid, parent } of cardSelectors) {
+  for (const { card, title, bvid, parent, up, duration } of cardSelectors) {
     const videoCards = document.querySelectorAll(card);
     for (const cardElement of videoCards) {
       // 检查元素是否已经被处理过
@@ -91,6 +117,8 @@ async function hideVideos(titleKeywords, sectionKeywords) {
 
       const titleElement = cardElement.querySelector(title);
       const bvidElement = cardElement.querySelector(bvid);
+      const upElement = cardElement.querySelector(up);
+      const durationElement = cardElement.querySelector(duration);
       
       if (titleElement && bvidElement) {
         const titleText = titleElement.textContent.toLowerCase();
@@ -105,6 +133,34 @@ async function hideVideos(titleKeywords, sectionKeywords) {
             parentElement.remove();
           }
           continue;
+        }
+
+        // 检查UP主关键词
+        if (upElement && upKeywords.length > 0) {
+          const upName = upElement.textContent.toLowerCase();
+          if (upKeywords.some((keyword) => upName.includes(keyword))) {
+            const parentElement = cardElement.closest(parent);
+            if (parentElement) {
+              parentElement.remove();
+            }
+            continue;
+          }
+        }
+
+        // 检查视频时长
+        if (minDuration > 0 && durationElement) {
+          const durationText = durationElement.textContent.trim();
+          const durationMinutes = convertDurationToMinutes(durationText);
+          console.log(`检查视频 "${titleElement.textContent}" - 时长: ${durationText}, 转换后: ${durationMinutes.toFixed(2)}分钟, 最小要求: ${minDuration}分钟`);
+          
+          if (durationMinutes < minDuration) {
+            const parentElement = cardElement.closest(parent);
+            if (parentElement) {
+              parentElement.remove(); // 直接移除，不再使用 display:none
+              console.log(`已屏蔽视频: ${titleElement.textContent} (时长: ${durationText})`);
+            }
+            continue;
+          }
         }
 
         // 检查分区关键词
@@ -188,7 +244,7 @@ function startBlocking() {
   const init = async () => {
     await loadTidMapConfig();
     
-    chrome.storage.local.get(["titleKeywords", "sectionKeywords", "cleanMode"], (data) => {
+    chrome.storage.local.get(["titleKeywords", "sectionKeywords", "upKeywords", "cleanMode", "minDuration"], (data) => {
       // 修改分隔逻辑,同时支持全角｜和半角|
       const titleKeywords = data.titleKeywords
         ? data.titleKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
@@ -196,17 +252,22 @@ function startBlocking() {
       const sectionKeywords = data.sectionKeywords
         ? data.sectionKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
         : [];
+      const upKeywords = data.upKeywords
+        ? data.upKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
+        : [];
+      
+      const minDuration = data.minDuration || 0;
       
       // 执行清理和屏蔽
       cleanPage(data.cleanMode);
-      hideVideos(titleKeywords, sectionKeywords);
+      hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
 
       // 使用防抖处理动态内容
       let timeoutId;
       const observer = new MutationObserver(() => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-          hideVideos(titleKeywords, sectionKeywords);
+          hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
           cleanPage(data.cleanMode);
         }, 500);
       });

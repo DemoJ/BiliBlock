@@ -3,12 +3,16 @@ document.getElementById("save").addEventListener("click", () => {
   // 获取两种关键词
   const titleKeywords = document.getElementById("titleKeywords").value;
   const sectionKeywords = document.getElementById("sectionKeywords").value;
+  const upKeywords = document.getElementById("upKeywords").value;
+  const minDuration = document.getElementById("minDuration").value;
 
   // 将关键词保存到 Chrome 存储
   chrome.storage.local.set(
     { 
       titleKeywords: titleKeywords,
-      sectionKeywords: sectionKeywords
+      sectionKeywords: sectionKeywords,
+      upKeywords: upKeywords,
+      minDuration: minDuration ? parseInt(minDuration) : 0
     }, 
     () => {
       // 显示保存成功的提示
@@ -25,12 +29,18 @@ document.getElementById("save").addEventListener("click", () => {
 });
 
 // 页面加载时初始化输入框内容
-chrome.storage.local.get(["titleKeywords", "sectionKeywords"], (data) => {
+chrome.storage.local.get(["titleKeywords", "sectionKeywords", "upKeywords", "minDuration"], (data) => {
   if (data.titleKeywords) {
     document.getElementById("titleKeywords").value = data.titleKeywords;
   }
   if (data.sectionKeywords) {
     document.getElementById("sectionKeywords").value = data.sectionKeywords;
+  }
+  if (data.upKeywords) {
+    document.getElementById("upKeywords").value = data.upKeywords;
+  }
+  if (data.minDuration) {
+    document.getElementById("minDuration").value = data.minDuration;
   }
 });
 

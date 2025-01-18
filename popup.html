@@ -188,6 +188,18 @@
     </div>
     
     <div class="input-group">
+      <label for="upKeywords">UP主关键词</label>
+      <input type="text" id="upKeywords" placeholder="输入UP主关键词，用 | 分隔">
+      <div class="hint">屏蔽up主名称中有该关键词的所有视频</div>
+    </div>
+    
+    <div class="input-group">
+      <label for="minDuration">最短时长(分钟)</label>
+      <input type="number" id="minDuration" min="0" placeholder="输入最短视频时长">
+      <div class="hint">屏蔽小于指定时长的视频，留空则不过滤</div>
+    </div>
+    
+    <div class="input-group">
       <label class="switch-label">
         <span>网页净化</span>
         <div class="switch">
@@ -195,7 +207,7 @@
           <span class="slider"></span>
         </div>
       </label>
-      <div class="hint">开启后将屏蔽评论区右侧的直播推荐</div>
+      <div class="hint">开启后将屏蔽首页及评论区右侧的直播推荐</div>
     </div>
     
     <button id="save">保存设置</button>
