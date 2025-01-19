@@ -194,50 +194,127 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
 }
 
 // 添加清理页面函数
-function cleanPage(enabled) {
-  if (!enabled) return;
-  
-  const liveSelectors = [
-    '.pop-live-small-mode',
-    '.floor-single-card',
-    '.bili-live-card is-rcmd'
-  ];
-  
-  const cleanLiveElements = () => {
-    let removedCount = 0;
-    liveSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (!element.dataset.biliblocked) {
-          element.style.setProperty('display', 'none', 'important');
-          element.dataset.biliblocked = 'true';
-          removedCount++;
-        }
-      });
+function cleanPage() {
+  try {
+    // 获取净化模式状态
+    chrome.storage.local.get(["cleanMode"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.log('Extension context invalidated');
+        return;
+      }
+
+      if (data.cleanMode) {
+        // 添加广告检测和屏蔽逻辑
+        const adSelectors = [
+          '.feed-card',
+          '.bili-video-card'
+        ];
+        
+        adSelectors.forEach(selector => {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(element => {
+            const adIcon = element.querySelector('.bili-video-card__info--creative-ad');
+            const adInfo = element.querySelector('.bili-video-card__info--ad');
+            
+            if (adIcon || adInfo) {
+              const cardElement = element.closest('.feed-card') || element.closest('.bili-video-card');
+              if (cardElement && !cardElement.dataset.biliblocked) {
+                cardElement.style.setProperty('display', 'none', 'important');
+                cardElement.dataset.biliblocked = 'true';
+              }
+            }
+          });
+        });
+        
+        // 原有的其他净化逻辑保持不变
+        const liveSelectors = [
+          '.pop-live-small-mode',
+          '.floor-single-card',
+          '.bili-live-card'
+        ];
+        
+        const cleanLiveElements = () => {
+          let removedCount = 0;
+          liveSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+              if (!element.dataset.biliblocked) {
+                element.style.setProperty('display', 'none', 'important');
+                element.dataset.biliblocked = 'true';
+                removedCount++;
+              }
+            });
+          });
+          return removedCount;
+        };
+
+        // 立即执行一次
+        cleanLiveElements();
+
+        // 延迟执行确保动态加载的内容也被处理
+        setTimeout(() => {
+          cleanLiveElements();
+        }, 1000);
+
+        // 使用轮询持续检查几秒钟
+        let checkCount = 0;
+        const interval = setInterval(() => {
+          const count = cleanLiveElements();
+          checkCount++;
+          
+          // 如果连续3次没有新元素被处理，或者已检查10次，则停止轮询
+          if ((count === 0 && checkCount > 3) || checkCount > 10) {
+            clearInterval(interval);
+          }
+        }, 500);
+      }
     });
-    return removedCount;
-  };
-
-  // 立即执行一次
-  cleanLiveElements();
-
-  // 延迟执行确保动态加载的内容也被处理
-  setTimeout(() => {
-    cleanLiveElements();
-  }, 1000);
-
-  // 使用轮询持续检查几秒钟
-  let checkCount = 0;
-  const interval = setInterval(() => {
-    const count = cleanLiveElements();
-    checkCount++;
-    
-    // 如果连续3次没有新元素被处理，或者已检查10次，则停止轮询
-    if ((count === 0 && checkCount > 3) || checkCount > 10) {
-      clearInterval(interval);
+  } catch (error) {
+    if (error.message.includes('Extension context invalidated')) {
+      // 扩展被重新加载或禁用，停止观察
+      if (window.biliBlockObserver) {
+        window.biliBlockObserver.disconnect();
+      }
+      console.log('Extension reloaded or disabled');
     }
-  }, 500);
+  }
 }
+
+// 保存 observer 的引用以便能够停止它
+window.biliBlockObserver = new MutationObserver((mutations) => {
+  try {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        cleanPage();
+      }
+    });
+  } catch (error) {
+    if (error.message.includes('Extension context invalidated')) {
+      window.biliBlockObserver.disconnect();
+      console.log('Extension reloaded or disabled');
+    }
+  }
+});
+
+// 开始观察页面变化
+try {
+  window.biliBlockObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // 初始执行一次清理
+  cleanPage();
+} catch (error) {
+  console.log('Failed to start observer:', error);
+}
+
+// 监听来自 popup 的消息
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "toggleCleanMode") {
+    cleanPage();
+  }
+});
 
 // 修改启动函数
 function startBlocking() {
@@ -260,7 +337,7 @@ function startBlocking() {
       const minDuration = data.minDuration || 0;
       
       // 执行清理和屏蔽
-      cleanPage(data.cleanMode);
+      cleanPage();
       hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
 
       // 使用防抖处理动态内容
@@ -269,7 +346,7 @@ function startBlocking() {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
-          cleanPage(data.cleanMode);
+          cleanPage();
         }, 500);
       });
 
