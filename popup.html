@@ -6,117 +6,217 @@
   <title>屏蔽关键词设置</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 16px;
       width: 320px;
-      background-color: #f9f9f9;
+      background-color: #fff;
       color: #333;
+      line-height: 1.4;
     }
 
     .container {
-      padding: 20px;
+      padding: 0;
     }
 
     h3 {
-      font-size: 20px;
-      margin-bottom: 15px;
+      font-size: 22px;
+      margin: 0 0 24px;
+      color: #1a73e8;
       text-align: center;
-      color: #2196F3;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      position: relative;
+    }
+
+    h3::after {
+      content: "";
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 3px;
+      background: #1a73e8;
+      border-radius: 2px;
+    }
+
+    .settings-group {
+      margin-bottom: 24px;
+    }
+
+    .settings-group:last-child {
+      margin-bottom: 20px;
+    }
+
+    .settings-group-title {
+      font-size: 15px;
+      color: #202124;
+      margin-bottom: 14px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      position: relative;
+      padding-left: 14px;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    .settings-group-title::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 2px;
+      bottom: 2px;
+      width: 4px;
+      background: #1a73e8;
+      border-radius: 2px;
     }
 
     .input-group {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .input-group:last-child {
+      margin-bottom: 0;
     }
 
     label {
       display: block;
-      margin-bottom: 8px;
-      font-size: 15px;
-      color: #444;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #3c4043;
       font-weight: 500;
     }
 
     input {
       width: 100%;
-      padding: 12px;
-      font-size: 14px;
-      border: 1px solid #ddd;
+      padding: 8px 12px;
+      font-size: 13px;
+      border: 1px solid #dadce0;
       border-radius: 6px;
       box-sizing: border-box;
-      transition: border-color 0.3s;
+      transition: all 0.2s;
+      color: #202124;
+    }
+
+    input:hover {
+      border-color: #bdc1c6;
     }
 
     input:focus {
       outline: none;
-      border-color: #2196F3;
-      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
     }
 
     .hint {
       font-size: 12px;
-      color: #666;
-      margin-top: 4px;
-      padding-left: 2px;
+      margin-top: 6px;
+      color: #80868b;
+      line-height: 1.4;
+      font-style: italic;
     }
 
     button {
       width: 100%;
-      padding: 12px;
-      font-size: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
       color: #fff;
-      background-color: #2196F3;
+      background-color: #1a73e8;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: all 0.2s;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
     }
 
     button:hover {
-      background-color: #1976D2;
+      background-color: #1557b0;
+      box-shadow: 0 4px 8px rgba(26, 115, 232, 0.4);
+      transform: translateY(-1px);
     }
 
     .status {
-      text-align: center;
-      color: #4CAF50;
-      font-size: 14px;
-      margin-top: 12px;
-      display: none;
-      padding: 8px;
-      background-color: #E8F5E9;
-      border-radius: 4px;
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 101;
+      background-color: #188038;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .status.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .status::before {
+      content: "✓";
+      margin-right: 6px;
+      font-weight: bold;
     }
 
     .footer {
-      margin-top: 25px;
-      font-size: 13px;
-      color: #666;
+      margin-bottom: 70px;
     }
 
     .footer .example {
-      background-color: #fff;
-      padding: 12px;
-      border-radius: 6px;
-      margin: 10px 0;
-      border: 1px solid #eee;
+      padding: 12px 14px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      line-height: 1.6;
+      border: 1px solid #e8eaed;
+    }
+
+    .footer .example div:first-child {
+      color: #3c4043;
+      font-weight: 600;
+      margin-bottom: 4px;
     }
 
     .footer .example strong {
-      color: #2196F3;
+      color: #1967d2;
+      font-weight: 600;
+      background: rgba(25, 103, 210, 0.05);
+      padding: 1px 4px;
+      border-radius: 3px;
     }
 
     .footer .note {
-      background-color: #E3F2FD;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 10px;
-      line-height: 1.5;
+      padding: 12px 14px 12px 14px;
+      background-color: #e8f0fe;
+      border-radius: 8px;
+      line-height: 1.6;
+      position: relative;
+      border-left: 4px solid #1a73e8;
     }
 
-    .divider {
-      height: 1px;
-      background-color: #eee;
-      margin: 15px 0;
+    .footer .note::before {
+      display: none;
+    }
+
+    .note-title {
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .footer .note {
+      padding-left: 38px;
     }
 
     .switch-label {
@@ -128,14 +228,8 @@
     .switch {
       position: relative;
       display: inline-block;
-      width: 40px;
+      width: 36px;
       height: 20px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
     }
 
     .slider {
@@ -145,8 +239,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
+      background-color: #dadce0;
+      transition: .2s;
       border-radius: 20px;
     }
 
@@ -158,16 +252,106 @@
       left: 2px;
       bottom: 2px;
       background-color: white;
-      transition: .4s;
+      transition: .2s;
       border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
 
     input:checked + .slider {
-      background-color: #2196F3;
+      background-color: #1a73e8;
     }
 
     input:checked + .slider:before {
-      transform: translateX(20px);
+      transform: translateX(16px);
+    }
+
+    /* 添加分隔线 */
+    .settings-group + .settings-group {
+      position: relative;
+      padding-top: 4px;
+    }
+
+    .settings-group + .settings-group::before {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: -16px;
+      right: -16px;
+      height: 1px;
+      background: #f1f3f4;
+    }
+
+    .switch-label span {
+      font-size: 14px;
+      color: #3c4043;
+      font-weight: 500;
+    }
+
+    /* 创建固定定位的按钮容器 */
+    .button-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      background: linear-gradient(to top, rgba(255,255,255,1) 80%, rgba(255,255,255,0.9) 90%, rgba(255,255,255,0));
+      z-index: 100;
+    }
+
+    /* 更新footer区域的通用样式 */
+    .footer {
+      margin-bottom: 70px;
+    }
+
+    /* 统一说明区块的基础样式 */
+    .info-block {
+      padding: 12px 14px;
+      border-radius: 8px;
+      line-height: 1.6;
+      position: relative;
+      border-left: 4px solid #1a73e8;
+      margin-bottom: 12px;
+    }
+
+    /* 统一标题样式 */
+    .info-title {
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    /* 示例区域样式 */
+    .footer .example {
+      background-color: #f8f9fa;
+      border: 1px solid #e8eaed;
+      border-left: 4px solid #1a73e8;
+    }
+
+    .footer .example strong {
+      color: #1967d2;
+      font-weight: 600;
+      background: rgba(25, 103, 210, 0.05);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* 注释区域样式 */
+    .footer .note {
+      background-color: #e8f0fe;
+      padding: 12px 14px;
+    }
+
+    /* 移除多余的样式 */
+    .footer .note::before {
+      display: none;
+    }
+
+    .footer .example div:first-child {
+      color: #1a73e8;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 13px;
     }
   </style>
 </head>
@@ -175,53 +359,61 @@
   <div class="container">
     <h3>BiliBlock 设置</h3>
     
-    <div class="input-group">
-      <label for="titleKeywords">标题关键词</label>
-      <input type="text" id="titleKeywords" placeholder="输入标题关键词，用 | 分隔">
-      <div class="hint">屏蔽包含指定关键词的视频标题</div>
+    <div class="settings-group">
+      <div class="settings-group-title">关键词过滤</div>
+      <div class="input-group">
+        <label for="titleKeywords">标题关键词</label>
+        <input type="text" id="titleKeywords" placeholder="输入标题关键词，用 | 分隔">
+        <div class="hint">屏蔽包含指定关键词的视频标题</div>
+      </div>
+      
+      <div class="input-group">
+        <label for="sectionKeywords">分区关键词</label>
+        <input type="text" id="sectionKeywords" placeholder="输入分区关键词，用 | 分隔">
+        <div class="hint">屏蔽指定分区的所有视频</div>
+      </div>
+      
+      <div class="input-group">
+        <label for="upKeywords">UP主关键词</label>
+        <input type="text" id="upKeywords" placeholder="输入UP主关键词，用 | 分隔">
+        <div class="hint">屏蔽昵称中有该关键词的up主</div>
+      </div>
     </div>
-    
-    <div class="input-group">
-      <label for="sectionKeywords">分区关键词</label>
-      <input type="text" id="sectionKeywords" placeholder="输入分区关键词，用 | 分隔">
-      <div class="hint">屏蔽指定分区的所有视频</div>
+
+    <div class="settings-group">
+      <div class="settings-group-title">其他设置</div>
+      <div class="input-group">
+        <label for="minDuration">最短时长(分钟)</label>
+        <input type="number" id="minDuration" min="0" placeholder="输入最短视频时长">
+        <div class="hint">屏蔽小于指定时长的视频，留空则不过滤</div>
+      </div>
+      
+      <div class="input-group">
+        <label class="switch-label">
+          <span>网页净化</span>
+          <div class="switch">
+            <input type="checkbox" id="cleanMode">
+            <span class="slider"></span>
+          </div>
+        </label>
+        <div class="hint">开启后将屏蔽首页及评论区右侧的直播推荐</div>
+      </div>
     </div>
-    
-    <div class="input-group">
-      <label for="upKeywords">UP主关键词</label>
-      <input type="text" id="upKeywords" placeholder="输入UP主关键词，用 | 分隔">
-      <div class="hint">屏蔽up主名称中有该关键词的所有视频</div>
+
+    <div class="button-container">
+      <button id="save">保存设置</button>
     </div>
-    
-    <div class="input-group">
-      <label for="minDuration">最短时长(分钟)</label>
-      <input type="number" id="minDuration" min="0" placeholder="输入最短视频时长">
-      <div class="hint">屏蔽小于指定时长的视频，留空则不过滤</div>
-    </div>
-    
-    <div class="input-group">
-      <label class="switch-label">
-        <span>网页净化</span>
-        <div class="switch">
-          <input type="checkbox" id="cleanMode">
-          <span class="slider"></span>
-        </div>
-      </label>
-      <div class="hint">开启后将屏蔽首页及评论区右侧的直播推荐</div>
-    </div>
-    
-    <button id="save">保存设置</button>
     <p id="status" class="status">设置已保存！</p>
 
     <div class="footer">
-      <div class="example">
-        <div>示例格式：</div>
+      <div class="example info-block">
+        <div class="info-title">示例格式</div>
         <div>标题关键词：<strong>广告|挑战|推广</strong></div>
         <div>分区关键词：<strong>游戏|音乐|舞蹈</strong></div>
       </div>
       
-      <div class="note">
-        📝 关于分区屏蔽：<br>
+      <div class="note info-block">
+        <div class="info-title">关于分区屏蔽</div>
         输入"游戏"将会屏蔽：单机游戏、手机游戏、网络游戏等所有包含"游戏"的分区视频<br>
         输入"音乐"将会屏蔽：原创音乐、音乐现场、音乐综合等所有包含"音乐"的分区视频
       </div>

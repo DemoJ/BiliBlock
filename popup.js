@@ -17,12 +17,11 @@ document.getElementById("save").addEventListener("click", () => {
     () => {
       // 显示保存成功的提示
       const status = document.getElementById("status");
-      status.textContent = "已保存！";
-      status.style.display = "block";
+      status.classList.add("show");
 
       // 2秒后隐藏提示
       setTimeout(() => {
-        status.style.display = "none";
+        status.classList.remove("show");
       }, 2000);
     }
   );
