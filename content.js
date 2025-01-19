@@ -200,7 +200,7 @@ function cleanPage(enabled) {
   const liveSelectors = [
     '.pop-live-small-mode',
     '.floor-single-card',
-    'bili-live-card is-rcmd'
+    '.bili-live-card is-rcmd'
   ];
   
   const cleanLiveElements = () => {
