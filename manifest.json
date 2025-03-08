@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BiliBlock-通过关键词屏蔽B站视频",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "屏蔽B站视频，按照标题关键词或分区关键词定向屏蔽视频",
   "permissions": [
     "storage"
