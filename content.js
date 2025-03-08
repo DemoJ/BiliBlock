@@ -77,6 +77,11 @@ function convertDurationToMinutes(duration) {
 
 // 修改隐藏视频的函数
 async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration) {
+  // 如果没有任何关键词和时长限制，直接返回，避免不必要的处理
+  if (titleKeywords.length === 0 && sectionKeywords.length === 0 && upKeywords.length === 0 && minDuration <= 0) {
+    return;
+  }
+
   const cardSelectors = [
     // 首页视频
     { 
@@ -104,90 +109,107 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
       parent: ".video-card",
       up: ".up-name__text, .bili-video-card__info--author",
       duration: ".bili-video-card__stats__duration"
+    },
+    // 详情页侧边栏推荐视频卡片
+    {
+      card: ".video-page-card-small",
+      title: ".title",
+      bvid: "a[href*='/BV']",
+      parent: ".video-page-card-small",
+      up: ".upname .name",
+      duration: ".duration"
     }
   ];
 
-  for (const { card, title, bvid, parent, up, duration } of cardSelectors) {
-    const videoCards = document.querySelectorAll(card);
-    for (const cardElement of videoCards) {
-      // 检查元素是否已经被处理过
-      if (cardElement.dataset.processed === 'true') {
-        continue;
-      }
+  // 创建一个队列来处理需要检查分区的视频
+  const sectionCheckQueue = [];
 
+  for (const { card, title, bvid, parent, up, duration } of cardSelectors) {
+    // 使用更高效的选择器，只选择未处理过的卡片
+    const videoCards = document.querySelectorAll(`${card}:not([data-biliblocked])`);
+    if (videoCards.length === 0) continue; // 如果没有未处理的卡片，跳过这个选择器
+    
+    for (const cardElement of videoCards) {
+      // 标记元素已处理，避免重复处理
+      cardElement.dataset.biliblocked = 'true';
+      
       const titleElement = cardElement.querySelector(title);
       const bvidElement = cardElement.querySelector(bvid);
       const upElement = cardElement.querySelector(up);
       const durationElement = cardElement.querySelector(duration);
       
-      if (titleElement && bvidElement) {
-        const titleText = titleElement.textContent.toLowerCase();
-        
-        // 标记元素已处理
-        cardElement.dataset.processed = 'true';
-        
-        // 检查标题关键词
-        if (titleKeywords.length > 0 && titleKeywords.some((keyword) => titleText.includes(keyword))) {
-          const parentElement = cardElement.closest(parent);
-          if (parentElement) {
-            parentElement.remove();
-          }
+      if (!titleElement || !bvidElement) continue; // 如果缺少必要元素，跳过
+      
+      const titleText = titleElement.textContent.toLowerCase();
+      
+      // 检查标题关键词
+      if (titleKeywords.length > 0 && titleKeywords.some((keyword) => titleText.includes(keyword))) {
+        cardElement.remove();
+        continue;
+      }
+
+      // 检查UP主关键词
+      if (upElement && upKeywords.length > 0) {
+        const upName = upElement.textContent.toLowerCase();
+        if (upKeywords.some((keyword) => upName.includes(keyword))) {
+          cardElement.remove();
           continue;
         }
+      }
 
-        // 检查UP主关键词
-        if (upElement && upKeywords.length > 0) {
-          const upName = upElement.textContent.toLowerCase();
-          if (upKeywords.some((keyword) => upName.includes(keyword))) {
-            const parentElement = cardElement.closest(parent);
-            if (parentElement) {
-              parentElement.remove();
-            }
-            continue;
-          }
+      // 检查视频时长
+      if (minDuration > 0 && durationElement) {
+        const durationText = durationElement.textContent.trim();
+        const durationMinutes = convertDurationToMinutes(durationText);
+        
+        if (durationMinutes < minDuration) {
+          cardElement.remove();
+          continue;
         }
+      }
 
-        // 检查视频时长
-        if (minDuration > 0 && durationElement) {
-          const durationText = durationElement.textContent.trim();
-          const durationMinutes = convertDurationToMinutes(durationText);
-          console.log(`检查视频 "${titleElement.textContent}" - 时长: ${durationText}, 转换后: ${durationMinutes.toFixed(2)}分钟, 最小要求: ${minDuration}分钟`);
-          
-          if (durationMinutes < minDuration) {
-            const parentElement = cardElement.closest(parent);
-            if (parentElement) {
-              parentElement.remove(); // 直接移除，不再使用 display:none
-              console.log(`已屏蔽视频: ${titleElement.textContent} (时长: ${durationText})`);
-            }
-            continue;
+      // 如果需要检查分区，将视频添加到队列中，而不是立即检查
+      if (sectionKeywords.length > 0) {
+        try {
+          const bvidMatch = bvidElement.href.match(/\/BV[\w]+/);
+          if (bvidMatch) {
+            const bvid = bvidMatch[0].replace('/', '');
+            sectionCheckQueue.push({ cardElement, bvid });
           }
+        } catch (error) {
+          console.error('处理视频分区失败:', error);
         }
+      }
+    }
+  }
 
-        // 检查分区关键词
-        if (sectionKeywords.length > 0) {
-          try {
-            const bvidMatch = bvidElement.href.match(/\/BV[\w]+/);
-            if (bvidMatch) {
-              const bvid = bvidMatch[0].replace('/', '');
-              const tid = await getVideoTid(bvid);
-              if (tid) {
-                const tidName = await getTidName(tid);
-                if (sectionKeywords.some((keyword) => {
-                  const lowercaseKeyword = keyword.toLowerCase();
-                  const lowercaseTidName = tidName.toLowerCase();
-                  return lowercaseTidName.includes(lowercaseKeyword);
-                })) {
-                  const parentElement = cardElement.closest(parent);
-                  if (parentElement) {
-                    parentElement.remove();
-                  }
-                }
-              }
+  // 批量处理分区检查队列，减少API调用次数
+  if (sectionCheckQueue.length > 0 && sectionKeywords.length > 0) {
+    // 每次最多处理10个视频，避免一次性发送太多请求
+    const batchSize = 10;
+    for (let i = 0; i < sectionCheckQueue.length; i += batchSize) {
+      const batch = sectionCheckQueue.slice(i, i + batchSize);
+      await Promise.all(batch.map(async ({ cardElement, bvid }) => {
+        try {
+          const tid = await getVideoTid(bvid);
+          if (tid) {
+            const tidName = await getTidName(tid);
+            if (sectionKeywords.some((keyword) => {
+              const lowercaseKeyword = keyword.toLowerCase();
+              const lowercaseTidName = tidName.toLowerCase();
+              return lowercaseTidName.includes(lowercaseKeyword);
+            })) {
+              cardElement.remove();
             }
-          } catch (error) {
-            console.error('处理视频分区失败:', error);
           }
+        } catch (error) {
+          console.error('处理视频分区失败:', error);
         }
+      }));
+      
+      // 添加短暂延迟，避免API请求过于频繁
+      if (i + batchSize < sectionCheckQueue.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
   }
@@ -207,21 +229,20 @@ function cleanPage() {
         // 添加广告检测和屏蔽逻辑
         const adSelectors = [
           '.feed-card',
-          '.bili-video-card'
+          '.bili-video-card',
+          '.video-page-card-small' // 添加详情页侧边栏推荐视频卡片
         ];
         
         adSelectors.forEach(selector => {
-          const elements = document.querySelectorAll(selector);
+          // 只选择未处理过的元素
+          const elements = document.querySelectorAll(`${selector}:not([data-biliblocked])`);
           elements.forEach(element => {
             const adIcon = element.querySelector('.bili-video-card__info--creative-ad');
             const adInfo = element.querySelector('.bili-video-card__info--ad');
             
             if (adIcon || adInfo) {
-              const cardElement = element.closest('.feed-card') || element.closest('.bili-video-card');
-              if (cardElement && !cardElement.dataset.biliblocked) {
-                cardElement.style.setProperty('display', 'none', 'important');
-                cardElement.dataset.biliblocked = 'true';
-              }
+              element.style.setProperty('display', 'none', 'important');
+              element.dataset.biliblocked = 'true';
             }
           });
         });
@@ -236,13 +257,12 @@ function cleanPage() {
         const cleanLiveElements = () => {
           let removedCount = 0;
           liveSelectors.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
+            // 只选择未处理过的元素
+            const elements = document.querySelectorAll(`${selector}:not([data-biliblocked])`);
             elements.forEach(element => {
-              if (!element.dataset.biliblocked) {
-                element.style.setProperty('display', 'none', 'important');
-                element.dataset.biliblocked = 'true';
-                removedCount++;
-              }
+              element.style.setProperty('display', 'none', 'important');
+              element.dataset.biliblocked = 'true';
+              removedCount++;
             });
           });
           return removedCount;
@@ -256,17 +276,17 @@ function cleanPage() {
           cleanLiveElements();
         }, 1000);
 
-        // 使用轮询持续检查几秒钟
+        // 使用轮询持续检查几秒钟，但减少检查次数
         let checkCount = 0;
         const interval = setInterval(() => {
           const count = cleanLiveElements();
           checkCount++;
           
-          // 如果连续3次没有新元素被处理，或者已检查10次，则停止轮询
-          if ((count === 0 && checkCount > 3) || checkCount > 10) {
+          // 如果连续2次没有新元素被处理，或者已检查5次，则停止轮询
+          if ((count === 0 && checkCount > 2) || checkCount > 5) {
             clearInterval(interval);
           }
-        }, 500);
+        }, 800); // 增加间隔时间，减少检查频率
       }
     });
   } catch (error) {
@@ -283,11 +303,33 @@ function cleanPage() {
 // 保存 observer 的引用以便能够停止它
 window.biliBlockObserver = new MutationObserver((mutations) => {
   try {
-    mutations.forEach((mutation) => {
-      if (mutation.addedNodes.length) {
-        cleanPage();
-      }
+    // 检查是否有相关元素被添加，避免不必要的处理
+    const hasRelevantChanges = mutations.some(mutation => {
+      return Array.from(mutation.addedNodes).some(node => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          return node.querySelector('.feed-card, .bili-video-card, .video-card, .video-page-card-small, .pop-live-small-mode, .floor-single-card, .bili-live-card') ||
+                 node.classList.contains('feed-card') ||
+                 node.classList.contains('bili-video-card') ||
+                 node.classList.contains('video-card') ||
+                 node.classList.contains('video-page-card-small') ||
+                 node.classList.contains('pop-live-small-mode') ||
+                 node.classList.contains('floor-single-card') ||
+                 node.classList.contains('bili-live-card');
+        }
+        return false;
+      });
     });
+    
+    if (!hasRelevantChanges) return;
+    
+    // 使用防抖处理，避免频繁执行
+    if (window.biliBlockDebounceTimer) {
+      clearTimeout(window.biliBlockDebounceTimer);
+    }
+    
+    window.biliBlockDebounceTimer = setTimeout(() => {
+      cleanPage();
+    }, 300);
   } catch (error) {
     if (error.message.includes('Extension context invalidated')) {
       window.biliBlockObserver.disconnect();
@@ -342,11 +384,30 @@ function startBlocking() {
 
       // 使用防抖处理动态内容
       let timeoutId;
-      const observer = new MutationObserver(() => {
+      const observer = new MutationObserver((mutations) => {
+        // 检查是否有相关元素被添加，避免不必要的处理
+        const hasRelevantChanges = mutations.some(mutation => {
+          return Array.from(mutation.addedNodes).some(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              return node.querySelector('.feed-card, .bili-video-card, .video-card, .video-page-card-small') ||
+                     node.classList.contains('feed-card') ||
+                     node.classList.contains('bili-video-card') ||
+                     node.classList.contains('video-card') ||
+                     node.classList.contains('video-page-card-small');
+            }
+            return false;
+          });
+        });
+        
+        if (!hasRelevantChanges) return;
+        
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
-          cleanPage();
+          // 只在必要时执行cleanPage
+          if (data.cleanMode) {
+            cleanPage();
+          }
         }, 500);
       });
 
@@ -354,6 +415,42 @@ function startBlocking() {
         childList: true,
         subtree: true,
       });
+      
+      // 特别处理详情页侧边栏推荐视频
+      // 由于详情页的推荐视频可能是动态加载的，我们需要定期检查，但要限制检查次数
+      if (window.location.href.includes('/video/')) {
+        const checkDetailPageRecommendations = () => {
+          const recommendCards = document.querySelectorAll('.video-page-card-small:not([data-biliblocked])');
+          if (recommendCards.length > 0) {
+            // 只处理未处理过的卡片
+            hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
+            return true; // 返回true表示找到了需要处理的卡片
+          }
+          return false; // 返回false表示没有找到需要处理的卡片
+        };
+        
+        // 立即检查一次
+        checkDetailPageRecommendations();
+        
+        // 然后每秒检查一次，但如果连续3次没有找到新卡片就停止
+        let checkCount = 0;
+        let emptyCheckCount = 0;
+        const interval = setInterval(() => {
+          const foundCards = checkDetailPageRecommendations();
+          checkCount++;
+          
+          if (!foundCards) {
+            emptyCheckCount++;
+          } else {
+            emptyCheckCount = 0; // 重置空检查计数
+          }
+          
+          // 如果连续3次没有找到新卡片或者总共检查了5次，就停止检查
+          if (emptyCheckCount >= 3 || checkCount >= 5) {
+            clearInterval(interval);
+          }
+        }, 1000);
+      }
     });
   };
 
