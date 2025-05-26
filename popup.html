@@ -353,6 +353,73 @@
       margin-bottom: 8px;
       font-size: 13px;
     }
+
+    /* 同步状态样式 */
+    .sync-status {
+      background-color: #f8f9fa;
+      border: 1px solid #e8eaed;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .sync-info div {
+      margin-bottom: 4px;
+    }
+
+    .sync-info div:last-child {
+      margin-bottom: 0;
+    }
+
+    .sync-enabled {
+      color: #137333;
+      font-weight: 600;
+    }
+
+    .sync-disabled {
+      color: #d93025;
+      font-weight: 600;
+    }
+
+    button.sync-link {
+      color: #1a73e8 !important;
+      text-decoration: none;
+      font-size: 12px !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-weight: normal !important;
+      cursor: pointer;
+      border: none !important;
+      background: transparent !important;
+      padding: 2px 4px !important;
+      margin-left: 8px;
+      display: inline-block !important;
+      vertical-align: baseline;
+      line-height: 1.2 !important;
+      outline: none;
+      white-space: nowrap;
+      width: auto !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      transform: none !important;
+      transition: none !important;
+      letter-spacing: normal !important;
+    }
+
+    button.sync-link:hover {
+      text-decoration: underline;
+      color: #1557b0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    button.sync-link:disabled {
+      color: #9aa0a6 !important;
+      cursor: not-allowed;
+      text-decoration: none;
+      background: transparent !important;
+    }
   </style>
 </head>
 <body>
@@ -400,6 +467,28 @@
       </div>
     </div>
 
+    <div class="settings-group">
+      <div class="settings-group-title">云端同步</div>
+      <div class="input-group">
+        <label class="switch-label">
+          <span>启用云端同步</span>
+          <div class="switch">
+            <input type="checkbox" id="syncEnabled" checked>
+            <span class="slider"></span>
+          </div>
+        </label>
+        <div class="hint">开启后设置将自动同步到你的浏览器账号</div>
+      </div>
+      
+      <div class="input-group">
+        <div id="syncStatus" class="sync-status">
+          <div class="sync-info">
+            <div>正在检查同步状态...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="button-container">
       <button id="save">保存设置</button>
     </div>
@@ -419,6 +508,7 @@
       </div>
     </div>
   </div>
+  <script src="sync-manager.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

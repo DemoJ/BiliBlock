@@ -364,94 +364,111 @@ function startBlocking() {
   const init = async () => {
     await loadTidMapConfig();
     
-    chrome.storage.local.get(["titleKeywords", "sectionKeywords", "upKeywords", "cleanMode", "minDuration"], (data) => {
-      // 修改分隔逻辑,同时支持全角｜和半角|
-      const titleKeywords = data.titleKeywords
-        ? data.titleKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
-        : [];
-      const sectionKeywords = data.sectionKeywords
-        ? data.sectionKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
-        : [];
-      const upKeywords = data.upKeywords
-        ? data.upKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
-        : [];
-      
-      const minDuration = data.minDuration || 0;
-      
-      // 执行清理和屏蔽
-      cleanPage();
-      hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
-
-      // 使用防抖处理动态内容
-      let timeoutId;
-      const observer = new MutationObserver((mutations) => {
-        // 检查是否有相关元素被添加，避免不必要的处理
-        const hasRelevantChanges = mutations.some(mutation => {
-          return Array.from(mutation.addedNodes).some(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              return node.querySelector('.feed-card, .bili-video-card, .video-card, .video-page-card-small') ||
-                     node.classList.contains('feed-card') ||
-                     node.classList.contains('bili-video-card') ||
-                     node.classList.contains('video-card') ||
-                     node.classList.contains('video-page-card-small');
-            }
-            return false;
-          });
+    // 尝试使用同步管理器加载设置，如果失败则回退到本地存储
+    let data;
+    try {
+      // 检查是否有同步管理器
+      if (typeof window !== 'undefined' && window.syncManager) {
+        data = await window.syncManager.loadSettings();
+      } else {
+        // 回退到本地存储
+        data = await new Promise((resolve) => {
+          chrome.storage.local.get(["titleKeywords", "sectionKeywords", "upKeywords", "cleanMode", "minDuration"], resolve);
         });
-        
-        if (!hasRelevantChanges) return;
-        
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
-          // 只在必要时执行cleanPage
-          if (data.cleanMode) {
-            cleanPage();
-          }
-        }, 500);
+      }
+    } catch (error) {
+      console.error('加载设置失败，使用本地存储:', error);
+      data = await new Promise((resolve) => {
+        chrome.storage.local.get(["titleKeywords", "sectionKeywords", "upKeywords", "cleanMode", "minDuration"], resolve);
       });
+    }
+    
+    // 处理设置数据
+    const titleKeywords = data.titleKeywords
+      ? data.titleKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
+      : [];
+    const sectionKeywords = data.sectionKeywords
+      ? data.sectionKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
+      : [];
+    const upKeywords = data.upKeywords
+      ? data.upKeywords.split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean)
+      : [];
+    
+        const minDuration = data.minDuration || 0;
+    
+    // 执行清理和屏蔽
+    cleanPage();
+    hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
+    // 使用防抖处理动态内容
+    let timeoutId;
+    const observer = new MutationObserver((mutations) => {
+      // 检查是否有相关元素被添加，避免不必要的处理
+      const hasRelevantChanges = mutations.some(mutation => {
+        return Array.from(mutation.addedNodes).some(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            return node.querySelector('.feed-card, .bili-video-card, .video-card, .video-page-card-small') ||
+                   node.classList.contains('feed-card') ||
+                   node.classList.contains('bili-video-card') ||
+                   node.classList.contains('video-card') ||
+                   node.classList.contains('video-page-card-small');
+          }
+          return false;
+        });
       });
       
-      // 特别处理详情页侧边栏推荐视频
-      // 由于详情页的推荐视频可能是动态加载的，我们需要定期检查，但要限制检查次数
-      if (window.location.href.includes('/video/')) {
-        const checkDetailPageRecommendations = () => {
-          const recommendCards = document.querySelectorAll('.video-page-card-small:not([data-biliblocked])');
-          if (recommendCards.length > 0) {
-            // 只处理未处理过的卡片
-            hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
-            return true; // 返回true表示找到了需要处理的卡片
-          }
-          return false; // 返回false表示没有找到需要处理的卡片
-        };
-        
-        // 立即检查一次
-        checkDetailPageRecommendations();
-        
-        // 然后每秒检查一次，但如果连续3次没有找到新卡片就停止
-        let checkCount = 0;
-        let emptyCheckCount = 0;
-        const interval = setInterval(() => {
-          const foundCards = checkDetailPageRecommendations();
-          checkCount++;
-          
-          if (!foundCards) {
-            emptyCheckCount++;
-          } else {
-            emptyCheckCount = 0; // 重置空检查计数
-          }
-          
-          // 如果连续3次没有找到新卡片或者总共检查了5次，就停止检查
-          if (emptyCheckCount >= 3 || checkCount >= 5) {
-            clearInterval(interval);
-          }
-        }, 1000);
-      }
+      if (!hasRelevantChanges) return;
+      
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
+        // 只在必要时执行cleanPage
+        if (data.cleanMode) {
+          cleanPage();
+        }
+      }, 500);
     });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    
+    // 特别处理详情页侧边栏推荐视频
+    // 由于详情页的推荐视频可能是动态加载的，我们需要定期检查，但要限制检查次数
+    if (window.location.href.includes('/video/')) {
+      const checkDetailPageRecommendations = () => {
+        const recommendCards = document.querySelectorAll('.video-page-card-small:not([data-biliblocked])');
+        if (recommendCards.length > 0) {
+          // 只处理未处理过的卡片
+          hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration);
+          return true; // 返回true表示找到了需要处理的卡片
+        }
+        return false; // 返回false表示没有找到需要处理的卡片
+      };
+      
+      // 立即检查一次
+      checkDetailPageRecommendations();
+      
+      // 然后每秒检查一次，但如果连续3次没有找到新卡片就停止
+      let checkCount = 0;
+      let emptyCheckCount = 0;
+      const interval = setInterval(() => {
+        const foundCards = checkDetailPageRecommendations();
+        checkCount++;
+        
+        if (!foundCards) {
+          emptyCheckCount++;
+        } else {
+          emptyCheckCount = 0; // 重置空检查计数
+        }
+        
+        // 如果连续3次没有找到新卡片或者总共检查了5次，就停止检查
+        if (emptyCheckCount >= 3 || checkCount >= 5) {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
   };
 
   // 确保在DOM加载完成后执行
