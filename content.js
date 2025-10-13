@@ -75,6 +75,18 @@ function convertDurationToMinutes(duration) {
   return minutes;
 }
 
+// 辅助函数，用于安全地移除卡片元素，避免留下空壳
+function removeCardElement(element) {
+  // 优先移除最外层的已知容器
+  const outerCard = element.closest('.bili-feed-card, .feed-card');
+  if (outerCard) {
+    outerCard.remove();
+  } else {
+    // 如果找不到，则移除元素本身
+    element.remove();
+  }
+}
+
 // 修改隐藏视频的函数
 async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuration) {
   // 如果没有任何关键词和时长限制，直接返回，避免不必要的处理
@@ -85,7 +97,7 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
   const cardSelectors = [
     // 首页视频
     { 
-      card: ".feed-card",
+      card: ".feed-card, .bili-feed-card",
       title: ".bili-video-card__info--tit, .bili-video-card__info .bili-video-card__info--tit",
       bvid: "a[href*='/BV']",
       parent: ".feed-card",
@@ -144,7 +156,7 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
       
       // 检查标题关键词
       if (titleKeywords.length > 0 && titleKeywords.some((keyword) => titleText.includes(keyword))) {
-        cardElement.remove();
+        removeCardElement(cardElement);
         continue;
       }
 
@@ -152,7 +164,7 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
       if (upElement && upKeywords.length > 0) {
         const upName = upElement.textContent.toLowerCase();
         if (upKeywords.some((keyword) => upName.includes(keyword))) {
-          cardElement.remove();
+          removeCardElement(cardElement);
           continue;
         }
       }
@@ -163,7 +175,7 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
         const durationMinutes = convertDurationToMinutes(durationText);
         
         if (durationMinutes < minDuration) {
-          cardElement.remove();
+          removeCardElement(cardElement);
           continue;
         }
       }
@@ -199,7 +211,7 @@ async function hideVideos(titleKeywords, sectionKeywords, upKeywords, minDuratio
               const lowercaseTidName = tidName.toLowerCase();
               return lowercaseTidName.includes(lowercaseKeyword);
             })) {
-              cardElement.remove();
+              removeCardElement(cardElement);
             }
           }
         } catch (error) {
@@ -239,10 +251,10 @@ function cleanPage() {
           elements.forEach(element => {
             const adIcon = element.querySelector('.bili-video-card__info--creative-ad');
             const adInfo = element.querySelector('.bili-video-card__info--ad');
+            const adSvg = element.querySelector('svg.vui_icon.bili-video-card__stats--icon');
             
-            if (adIcon || adInfo) {
-              element.style.setProperty('display', 'none', 'important');
-              element.dataset.biliblocked = 'true';
+            if (adIcon || adInfo || adSvg) {
+              removeCardElement(element);
             }
           });
         });
@@ -260,8 +272,7 @@ function cleanPage() {
             // 只选择未处理过的元素
             const elements = document.querySelectorAll(`${selector}:not([data-biliblocked])`);
             elements.forEach(element => {
-              element.style.setProperty('display', 'none', 'important');
-              element.dataset.biliblocked = 'true';
+              removeCardElement(element);
               removedCount++;
             });
           });
