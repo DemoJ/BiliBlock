@@ -2,6 +2,8 @@
 // 屏蔽策略：用 CSS 隐藏（hidden-video 类）代替 remove()。
 // B站是 Vue SPA，直接删除节点会破坏虚拟 DOM，导致详情页路由切换后
 // 页面不更新、评论区无法渲染等问题；隐藏外层容器既不破坏页面，也不会留下空白。
+// 注：热门页等两列列表的列间距由 nth-child(odd) 的 margin 撑出，隐藏卡片后
+// 奇偶位会错位并留下空洞，styles.css 里改用 flex column-gap 兜住这一点。
 
 const videoTidCache = new Map();
 let tidMapConfig = null;

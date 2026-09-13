@@ -1,4 +1,27 @@
-/* 可以用于调试，被屏蔽的元素会暂时显示一个红色边框 */
+/* 被屏蔽的卡片：隐藏而不删除，避免破坏 Vue 虚拟 DOM */
 .hidden-video {
-    display: none !important;
-  }
+  display: none !important;
+}
+
+/* ==================== 屏蔽后不留空洞 ====================
+ * 热门页（ul.card-list）和每周必看（.video-list）都是两列 flex-wrap 列表，
+ * 列间距不是靠 gap，而是靠 `.video-card:nth-child(odd){margin-right:10px}`
+ * 这条奇偶位规则撑出来的（卡片宽度 calc(50% - 5px)，两列正好 638+10+638=1286）。
+ *
+ * 一旦屏蔽掉一张卡片，后面卡片的奇偶位就整体错位：本该落在右列、右边距为 0
+ * 的卡片，被算成了左列，多出 10px 右边距 —— 648 + 648 > 1286 放不下，
+ * 于是提前换行，原位置就留下一个空洞。
+ *
+ * 这里把间距改由 flex 的 column-gap 承担，间距不再参与奇偶位计算，
+ * 任意位置、任意数量的卡片被屏蔽后都能正确补位，不留空白。
+ * 卡片宽度和两列布局保持原样，未屏蔽时视觉与原来完全一致。
+ */
+.card-list,
+.weekly-list .video-list {
+  column-gap: 10px !important;
+}
+
+.card-list > .video-card,
+.weekly-list .video-list > .video-card {
+  margin-right: 0 !important;
+}
