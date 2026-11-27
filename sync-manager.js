@@ -138,12 +138,13 @@ class SyncManager {
   async loadLocalSettings() {
     return new Promise((resolve) => {
       chrome.storage.local.get([
-        "titleKeywords", 
-        "sectionKeywords", 
-        "upKeywords", 
-        "minDuration", 
-        "cleanMode", 
-        "version", 
+        "titleKeywords",
+        "sectionKeywords",
+        "upKeywords",
+        "minDuration",
+        "cleanMode",
+        "paused",
+        "version",
         "deviceId"
       ], (data) => {
         resolve(data);

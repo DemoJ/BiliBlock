@@ -16,11 +16,17 @@ let currentSettings = {
   upKeywords: [],
   minDuration: 0,
   cleanMode: false,
+  paused: false,
 };
 let settingsReady = false;
 
 function parseKeywords(str) {
   return str ? String(str).split(/[|｜]/).map((k) => k.trim().toLowerCase()).filter(Boolean) : [];
+}
+
+// 调试日志：console.debug 级别，控制台筛选 [BiliBlock] 并开启 Verbose 才可见
+function debugLog(...args) {
+  console.debug('[BiliBlock]', ...args);
 }
 
 // 从本地/云端加载设置并写入缓存
@@ -31,13 +37,13 @@ async function loadSettingsIntoCache() {
       data = await window.syncManager.loadSettings();
     } else {
       data = await new Promise((resolve) => {
-        chrome.storage.local.get(['titleKeywords', 'sectionKeywords', 'upKeywords', 'cleanMode', 'minDuration'], resolve);
+        chrome.storage.local.get(['titleKeywords', 'sectionKeywords', 'upKeywords', 'cleanMode', 'minDuration', 'paused'], resolve);
       });
     }
   } catch (error) {
     console.error('加载设置失败，使用本地存储:', error);
     data = await new Promise((resolve) => {
-      chrome.storage.local.get(['titleKeywords', 'sectionKeywords', 'upKeywords', 'cleanMode', 'minDuration'], resolve);
+      chrome.storage.local.get(['titleKeywords', 'sectionKeywords', 'upKeywords', 'cleanMode', 'minDuration', 'paused'], resolve);
     });
   }
 
@@ -47,6 +53,7 @@ async function loadSettingsIntoCache() {
     upKeywords: parseKeywords(data.upKeywords),
     minDuration: data.minDuration || 0,
     cleanMode: !!data.cleanMode,
+    paused: !!data.paused,
   };
   settingsReady = true;
 }
@@ -152,6 +159,8 @@ async function pumpSectionQueue() {
     let index = 0;
     const workers = Array.from({ length: concurrency }, async () => {
       while (index < sectionQueue.length) {
+        // 暂停屏蔽后停止处理剩余队列，避免与恢复逻辑竞争
+        if (currentSettings.paused) break;
         const { cardElement, bvid } = sectionQueue[index++];
         // 卡片可能已被后续逻辑移出 DOM（路由切换、被隐藏等），跳过
         if (!cardElement.isConnected) continue;
@@ -161,6 +170,7 @@ async function pumpSectionQueue() {
           if (tid) {
             const tidName = (await getTidName(tid)).toLowerCase();
             if (sectionKeywords.some((keyword) => tidName.includes(keyword))) {
+              debugLog('分区命中:', tidName, '→', bvid);
               hideCardElement(cardElement);
               continue;
             }
@@ -240,13 +250,17 @@ async function hideVideos(settings) {
       const titleText = titleElement.textContent.toLowerCase();
 
       if (titleKeywords.length > 0 && titleKeywords.some((keyword) => titleText.includes(keyword))) {
+        const hitKeyword = titleKeywords.find((keyword) => titleText.includes(keyword));
+        debugLog('标题命中:', JSON.stringify(hitKeyword), '→', titleElement.textContent.trim().slice(0, 40));
         hideCardElement(cardElement);
         continue;
       }
 
       if (upElement && upKeywords.length > 0) {
         const upName = upElement.textContent.toLowerCase();
-        if (upKeywords.some((keyword) => upName.includes(keyword))) {
+        const hitUp = upKeywords.find((keyword) => upName.includes(keyword));
+        if (hitUp) {
+          debugLog('UP主命中:', JSON.stringify(hitUp), '→', upElement.textContent.trim().slice(0, 30));
           hideCardElement(cardElement);
           continue;
         }
@@ -255,6 +269,7 @@ async function hideVideos(settings) {
       if (minDuration > 0 && durationElement) {
         const durationMinutes = convertDurationToMinutes(durationElement.textContent.trim());
         if (durationMinutes < minDuration) {
+          debugLog('时长过滤:', durationElement.textContent.trim(), '<', minDuration, '分钟');
           hideCardElement(cardElement);
           continue;
         }
@@ -294,7 +309,10 @@ function cleanPage() {
         element.querySelector('.bili-video-card__info--ad') ||
         Array.from(element.querySelectorAll('.bili-video-card__stats--text'))
           .some((el) => el.textContent.trim() === '广告');
-      if (isAd) hideCardElement(element);
+      if (isAd) {
+        debugLog('净化:广告卡片');
+        hideCardElement(element);
+      }
     }
   }
 
@@ -302,6 +320,7 @@ function cleanPage() {
   for (const selector of liveSelectors) {
     const elements = document.querySelectorAll(`${selector}:not([data-biliblocked])`);
     for (const element of elements) {
+      debugLog('净化:直播/活动卡片', selector);
       hideCardElement(element);
     }
   }
@@ -332,9 +351,18 @@ function isContextInvalidated(error) {
   return error && error.message && error.message.includes('Extension context invalidated');
 }
 
+// 恢复页面上所有被隐藏的卡片（暂停屏蔽、设置变更时调用）
+function unhideAllCards() {
+  document.querySelectorAll('.hidden-video').forEach((el) => el.classList.remove('hidden-video'));
+}
+
 async function runScan() {
   try {
     if (!settingsReady) return;
+    if (currentSettings.paused) {
+      unhideAllCards();
+      return;
+    }
     cleanPage();
     await hideVideos(currentSettings);
   } catch (error) {
@@ -383,7 +411,7 @@ function scheduleSettingsRefresh() {
     try {
       // 重置所有标记并取消全部隐藏，由重扫按新规则重新决定
       document.querySelectorAll('[data-biliblocked]').forEach((el) => el.removeAttribute('data-biliblocked'));
-      document.querySelectorAll('.hidden-video').forEach((el) => el.classList.remove('hidden-video'));
+      unhideAllCards();
       await loadSettingsIntoCache();
       scheduleScan(100);
     } catch (error) {
@@ -405,7 +433,7 @@ function startBlocking() {
         chrome.storage.onChanged.addListener((changes, area) => {
           if (area !== 'local') return;
           const keys = Object.keys(changes);
-          const relevant = ['titleKeywords', 'sectionKeywords', 'upKeywords', 'minDuration', 'cleanMode', 'version'];
+          const relevant = ['titleKeywords', 'sectionKeywords', 'upKeywords', 'minDuration', 'cleanMode', 'paused', 'version'];
           if (keys.some((k) => relevant.includes(k))) {
             scheduleSettingsRefresh();
           }

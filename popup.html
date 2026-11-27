@@ -16,7 +16,7 @@
     }
 
     .container {
-      padding: 0;
+      padding: 0 0 70px;
     }
 
     h3 {
@@ -265,6 +265,81 @@
       transform: translateX(16px);
     }
 
+    /* 关键词标签输入 */
+    .kw-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .kw-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .kw-add {
+      width: auto !important;
+      flex: none;
+      padding: 7px 14px !important;
+      font-size: 13px;
+      color: #fff;
+      background-color: #1a73e8;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .kw-add:hover {
+      background-color: #1557b0;
+      transform: none;
+    }
+
+    .kw-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 26px;
+      margin-bottom: 4px;
+    }
+
+    .kw-tags .empty {
+      font-size: 12px;
+      color: #80868b;
+      font-style: italic;
+      line-height: 26px;
+    }
+
+    .kw-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background-color: #e8f0fe;
+      color: #1967d2;
+      font-size: 13px;
+      padding: 3px 5px 3px 10px;
+      border-radius: 13px;
+    }
+
+    .kw-tag .kw-remove {
+      width: auto !important;
+      padding: 0 5px !important;
+      background: transparent;
+      border: none;
+      color: #1967d2;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .kw-tag .kw-remove:hover {
+      color: #a32d2d;
+      background: transparent;
+      transform: none;
+      box-shadow: none;
+    }
+
     /* 添加分隔线 */
     .settings-group + .settings-group {
       position: relative;
@@ -425,25 +500,48 @@
 <body>
   <div class="container">
     <h3>BiliBlock 设置</h3>
-    
+
+    <div class="settings-group">
+      <div class="settings-group-title">屏蔽开关</div>
+      <div class="input-group">
+        <label class="switch-label">
+          <span>暂停屏蔽</span>
+          <div class="switch">
+            <input type="checkbox" id="paused">
+            <span class="slider"></span>
+          </div>
+        </label>
+      </div>
+    </div>
+
     <div class="settings-group">
       <div class="settings-group-title">关键词过滤</div>
       <div class="input-group">
-        <label for="titleKeywords">标题关键词</label>
-        <input type="text" id="titleKeywords" placeholder="输入标题关键词，用 | 分隔">
-        <div class="hint">屏蔽标题包含指定关键词的视频</div>
+        <label for="titleKeywordsInput">标题关键词</label>
+        <div class="kw-row">
+          <input type="text" id="titleKeywordsInput" placeholder="输入一个关键词，回车或点添加">
+          <button type="button" class="kw-add" data-target="titleKeywords">添加</button>
+        </div>
+        <div class="kw-tags" id="titleKeywordsTags"><span class="empty">暂无关键词</span></div>
       </div>
-      
+
       <div class="input-group">
-        <label for="sectionKeywords">分区关键词</label>
-        <input type="text" id="sectionKeywords" placeholder="输入分区关键词，用 | 分隔">
-        <div class="hint">屏蔽指定分区的所有视频</div>
+        <label for="sectionKeywordsInput">分区关键词</label>
+        <div class="kw-row">
+          <input type="text" id="sectionKeywordsInput" placeholder="输入一个分区，如：游戏">
+          <button type="button" class="kw-add" data-target="sectionKeywords">添加</button>
+        </div>
+        <div class="kw-tags" id="sectionKeywordsTags"><span class="empty">暂无关键词</span></div>
+        <div class="hint">输入"游戏"将屏蔽单机游戏、手机游戏等所有包含"游戏"的分区</div>
       </div>
-      
+
       <div class="input-group">
-        <label for="upKeywords">UP主关键词</label>
-        <input type="text" id="upKeywords" placeholder="输入UP主关键词，用 | 分隔">
-        <div class="hint">屏蔽昵称中有该关键词的up主</div>
+        <label for="upKeywordsInput">UP主关键词</label>
+        <div class="kw-row">
+          <input type="text" id="upKeywordsInput" placeholder="输入UP主昵称或昵称片段">
+          <button type="button" class="kw-add" data-target="upKeywords">添加</button>
+        </div>
+        <div class="kw-tags" id="upKeywordsTags"><span class="empty">暂无关键词</span></div>
       </div>
     </div>
 
@@ -493,20 +591,6 @@
       <button id="save">保存设置</button>
     </div>
     <p id="status" class="status">设置已保存！</p>
-
-    <div class="footer">
-      <div class="example info-block">
-        <div class="info-title">示例格式</div>
-        <div>标题关键词：<strong>广告|挑战|推广</strong></div>
-        <div>分区关键词：<strong>游戏|音乐|舞蹈</strong></div>
-      </div>
-      
-      <div class="note info-block">
-        <div class="info-title">关于分区屏蔽</div>
-        输入"游戏"将会屏蔽：单机游戏、手机游戏、网络游戏等所有包含"游戏"的分区视频<br>
-        输入"音乐"将会屏蔽：原创音乐、音乐现场、音乐综合等所有包含"音乐"的分区视频
-      </div>
-    </div>
   </div>
   <script src="sync-manager.js"></script>
   <script src="popup.js"></script>
